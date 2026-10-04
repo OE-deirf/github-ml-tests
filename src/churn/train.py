@@ -2,17 +2,18 @@
 
 The preprocessing lives INSIDE the Pipeline on purpose: that is what removes the
 training/serving skew class of bugs (week 5-6). Never ship separate scaler.pkl /
-encoder.pkl files -- see the anti-pattern in context/MLSecOps/Gyakorlat/.
+encoder.pkl files.
 
 Run:  python -m src.churn.train      (or: dvc repro train)
 """
 
 from __future__ import annotations
+from logging import Logger
 from typing import Any
 
 import joblib
 import pandas as pd
-from pandas import DataFrame
+from pandas import DataFrame, Series
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
@@ -22,16 +23,16 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from src.churn import config
 
-log = config.get_logger(__name__)
+log: Logger = config.get_logger(__name__)
 
 
 def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
     """One-hot for object/category columns, scaling for numeric ones."""
-    categorical = X.select_dtypes(include=["object", "category", "bool"]).columns.tolist()
-    numeric = [c for c in X.columns if c not in categorical]
+    categorical: Any = X.select_dtypes(include=["object", "category", "bool"]).columns.tolist()
+    numeric: list[str] = [c for c in X.columns if c not in categorical]
     log.info("categorical=%d numeric=%d", len(categorical), len(numeric))
 
-    return ColumnTransformer(
+    transformer: ColumnTransformer = ColumnTransformer(
         transformers=[
             (
                 "cat",
@@ -59,8 +60,12 @@ def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
         remainder="drop",
     )
 
+    return transformer
 
-def build_estimator(model_name: str, seed: int, train_params: Any):
+
+def build_estimator(
+        model_name: str, seed: int, train_params: dict[str, Any]
+) -> RandomForestClassifier | LogisticRegression:
     if model_name == "random_forest":
         return RandomForestClassifier(
             n_estimators=train_params["n_estimators"],
@@ -80,7 +85,7 @@ def build_estimator(model_name: str, seed: int, train_params: Any):
 
 
 def build_pipeline(
-        X: pd.DataFrame, model_name: str, seed: int, train_params: Any) -> Pipeline:
+        X: pd.DataFrame, model_name: str, seed: int, train_params: dict[str, Any]) -> Pipeline:
     return Pipeline(
         [
             ("preprocess", build_preprocessor(X)),
@@ -91,13 +96,13 @@ def build_pipeline(
 
 def main() -> None:
     params: dict[str, Any] = config.load_params()
-    seed = params["seed"]
-    target = params["prepare"]["target"]
-    train_params = params["train"]
+    seed: int = params["seed"]
+    target: str = params["prepare"]["target"]
+    train_params: dict[str, Any] = params["train"]
 
     train_df: DataFrame = pd.read_csv(config.TRAIN_CSV)
-    X = train_df.drop(columns=[target])
-    y = train_df[target]
+    X: DataFrame = train_df.drop(columns=[target])
+    y: Series = train_df[target]
 
     pipe: Pipeline = build_pipeline(X, train_params["model"], seed, train_params)
     log.info("Fitting %s on %d rows", train_params["model"], len(X))

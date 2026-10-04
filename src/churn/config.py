@@ -1,7 +1,7 @@
 """Shared configuration and helpers for the churn pipeline.
 
 Single source of truth for paths and for reading ``params.yaml``.
-No magic constants scattered across the stage modules (see week 2).
+No magic constants scattered across the stage modules.
 """
 
 from __future__ import annotations
@@ -16,20 +16,20 @@ import yaml
 
 # --- Paths -----------------------------------------------------------------
 # config.py -> churn -> src -> project root
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT: Path = Path(__file__).resolve().parents[2]
 print("Project root:", PROJECT_ROOT)
-RAW_DIR = PROJECT_ROOT / "data" / "raw"
-PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
-MODELS_DIR = PROJECT_ROOT / "models"
-METRICS_DIR = PROJECT_ROOT / "metrics"
+RAW_DIR: Path = PROJECT_ROOT / "data" / "raw"
+PROCESSED_DIR: Path = PROJECT_ROOT / "data" / "processed"
+MODELS_DIR: Path = PROJECT_ROOT / "models"
+METRICS_DIR: Path = PROJECT_ROOT / "metrics"
 
-RAW_CSV = RAW_DIR / "churn.csv"
-TRAIN_CSV = PROCESSED_DIR / "train.csv"
-VALID_CSV = PROCESSED_DIR / "valid.csv"
-MODEL_PATH = MODELS_DIR / "model.joblib"
-METRICS_PATH = METRICS_DIR / "metrics.json"
+RAW_CSV: Path = RAW_DIR / "churn.csv"
+TRAIN_CSV: Path = PROCESSED_DIR / "train.csv"
+VALID_CSV: Path = PROCESSED_DIR / "valid.csv"
+MODEL_PATH: Path = MODELS_DIR / "model.joblib"
+METRICS_PATH: Path = METRICS_DIR / "metrics.json"
 
-PARAMS_PATH = PROJECT_ROOT / "params.yaml"
+PARAMS_PATH: Path = PROJECT_ROOT / "params.yaml"
 
 
 # --- Params ----------------------------------------------------------------

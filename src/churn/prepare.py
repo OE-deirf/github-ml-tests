@@ -30,7 +30,7 @@ def clean(df: pd.DataFrame, target: str, drop_columns: list[str]) -> pd.DataFram
     if df[target].isna().any():
         raise ValueError(f"Unparseable values in target column '{target}'")
 
-    before = len(df)
+    before: int = len(df)
     df = df.drop_duplicates().reset_index(drop=True)
     if len(df) != before:
         log.warning("Dropped %d duplicate rows", before - len(df))
@@ -39,7 +39,7 @@ def clean(df: pd.DataFrame, target: str, drop_columns: list[str]) -> pd.DataFram
 
 def main() -> None:
     params: dict[str, Any] = config.load_params()
-    seed = params["seed"]
+    seed: int = params["seed"]
     prepare_params = params["prepare"]
     target = prepare_params["target"]
 
