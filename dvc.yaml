@@ -28,8 +28,10 @@ stages:
     cmd: python -m src.churn.train
     deps:
       - src/churn/train.py
+      - src/churn/scoring.py
       - src/churn/config.py
       - data/processed/train.csv
+      - data/processed/valid.csv
     params:
       - seed
       - prepare.target
@@ -40,6 +42,8 @@ stages:
       - train.class_weight
     outs:
       - models/model.joblib
+      - models/mlflow_run_id:
+          cache: false      # plain text run ID -> goes to GIT
 
   evaluate:
     cmd: python -m src.churn.evaluate
@@ -47,6 +51,7 @@ stages:
       - src/churn/evaluate.py
       - src/churn/config.py
       - models/model.joblib
+      - models/mlflow_run_id
       - data/processed/valid.csv
     params:
       - prepare.target

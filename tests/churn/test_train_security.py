@@ -123,10 +123,12 @@ class _TrainEnv:
     def __init__(
         self,
         csv_path: Path,
+        valid_csv_path: Path,
         model_path: Path,
         base_params: dict[str, Any],
     ) -> None:
         self.csv_path: Path = csv_path
+        self.valid_csv_path: Path = valid_csv_path
         self.model_path: Path = model_path
         self.base_params: dict[str, Any] = base_params
 
@@ -146,10 +148,17 @@ class _TrainEnv:
 
 @pytest.fixture()
 def base_params() -> dict[str, Any]:
-    """Minimal valid params dict mirroring the prepare/train sections of params.yaml."""
+    """Minimal valid params dict mirroring the prepare/train/evaluate sections of params.yaml."""
     return {
         "seed": 42,
-        "prepare": {"target": "Churn"},
+        "prepare": {
+            "target": "Churn",
+            "test_size": 0.2,
+            "stratify": True,
+        },
+        "evaluate": {
+            "threshold": 0.5,
+        },
         "train": {
             "model": "logistic_regression",
             "class_weight": "balanced",
@@ -168,23 +177,41 @@ def train_df() -> pd.DataFrame:
 
 
 @pytest.fixture()
+def valid_df() -> pd.DataFrame:
+    """Four-row validation DataFrame with binary Churn target (both classes present)."""
+    return pd.DataFrame({
+        "MonthlyCharges": [30.0, 55.0, 50.0, 40.0],
+        "Tenure": [2, 10, 20, 5],
+        "Churn": [1, 0, 1, 0],
+    })
+
+
+@pytest.fixture()
 def train_env(
     tmp_path: Path,
     base_params: dict[str, Any],
     train_df: pd.DataFrame,
+    valid_df: pd.DataFrame,
     monkeypatch: pytest.MonkeyPatch,
 ) -> _TrainEnv:
     """Wire filesystem paths to tmp_path and return a _TrainEnv helper."""
     csv_path: Path = tmp_path / "train.csv"
     train_df.to_csv(csv_path, index=False)
+    valid_csv_path: Path = tmp_path / "valid.csv"
+    valid_df.to_csv(valid_csv_path, index=False)
     model_path: Path = tmp_path / "model.joblib"
 
     monkeypatch.setattr(config, "TRAIN_CSV", csv_path)
+    monkeypatch.setattr(config, "VALID_CSV", valid_csv_path)
     monkeypatch.setattr(config, "MODEL_PATH", model_path)
     monkeypatch.setattr(config, "MODELS_DIR", tmp_path)
+    monkeypatch.setattr(config, "MLFLOW_RUN_ID_PATH", tmp_path / "mlflow_run_id")
+    monkeypatch.setattr(config, "MLFLOW_TRACKING_URI", f"file://{tmp_path}/mlruns")
+    monkeypatch.setattr(config, "MLFLOW_REGISTERED_MODEL", "")
 
     return _TrainEnv(
         csv_path=csv_path,
+        valid_csv_path=valid_csv_path,
         model_path=model_path,
         base_params=base_params,
     )
@@ -634,21 +661,23 @@ class TestMainDataSecurity:
         with pytest.raises(ValueError):
             train_env.run()
 
-    def test_single_class_target_trains_and_writes_model_silently(
+    def test_single_class_target_raises_at_metric_computation(
         self, train_env: _TrainEnv
     ) -> None:
-        """[SEC-SILENT] Training on a single-class target with random_forest
-        silently produces and writes a degenerate model.
+        """[SEC-SILENT] Training on a single-class target now raises IndexError during
+        scoring.compute_metrics() rather than silently writing a degenerate model.
 
-        CURRENT BEHAVIOUR: RandomForestClassifier is fitted on y=[0,0,0,0] and
-          the artifact is written to MODEL_PATH without any warning.  The model's
-          predict_proba will return a 1-column array, causing an IndexError in
-          evaluate.py.
+        CURRENT BEHAVIOUR: RandomForestClassifier is fitted on y=[0,0,0,0].
+          scoring.compute_metrics() calls predict_proba(X_valid)[:, 1] on the
+          degenerate model, which returns a 1-column array → IndexError.
+          joblib.dump() is never reached, so no model artifact is written.
         EXPECTED BEHAVIOUR:
           raise ValueError("Training target must have at least 2 classes")
+          checked BEFORE fit(), with a controlled message.
 
-        SECURITY GAP CONFIRMED: a degenerate model is silently promoted through
-        the pipeline and will fail at evaluation time with an unrelated error.
+        SECURITY GAP PARTIALLY FIXED: the pipeline now fails before the artifact
+        is written.  The error is still uncontrolled (IndexError) instead of a
+        targeted ValueError raised early.
         """
         single_class_df = pd.DataFrame({
             "MonthlyCharges": [29.85, 56.95, 53.85, 42.30],
@@ -666,9 +695,10 @@ class TestMainDataSecurity:
                 "class_weight": "balanced",
             },
         }
-        train_env.run(params=params_rf)  # must NOT raise
-        assert train_env.model_path.exists(), (
-            "SECURITY GAP CONFIRMED: degenerate single-class model written silently"
+        with pytest.raises((IndexError, ValueError)):
+            train_env.run(params=params_rf)
+        assert not train_env.model_path.exists(), (
+            "Model must not be written when metric computation fails on single-class data"
         )
 
     def test_missing_target_column_in_csv_raises_key_error_exposing_column_name(

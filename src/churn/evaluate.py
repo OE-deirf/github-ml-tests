@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 import joblib
+import mlflow
 import pandas as pd
 from pandas import DataFrame
 from sklearn.metrics import (
@@ -50,6 +51,17 @@ def main() -> None:
 
     config.write_json(config.METRICS_PATH, metrics)
     log.info("Metrics: %s", metrics)
+
+    run_id = config.MLFLOW_RUN_ID_PATH.read_text().strip()
+    mlflow.set_tracking_uri(config.MLFLOW_TRACKING_URI)
+
+    with mlflow.start_run(run_id=run_id):
+        mlflow.log_params({
+            "threshold": evaluate_params["threshold"],
+            "min_f1": evaluate_params["min_f1"],
+        })
+        mlflow.log_metrics({k: float(v) for k, v in metrics.items()})
+        mlflow.log_artifact(str(config.METRICS_PATH))
 
     if metrics["f1"] < evaluate_params["min_f1"]:
         log.warning(

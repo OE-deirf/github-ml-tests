@@ -9,12 +9,12 @@ stages:
       size: 431234
     - path: src/churn/config.py
       hash: md5
-      md5: f51cdf0fc75daa3298f48bdfc5e4fc31
-      size: 2213
+      md5: 720c219fad2217be8bd0bbc73ac265c4
+      size: 4958
     - path: src/churn/prepare.py
       hash: md5
-      md5: 92521a65c1d43af9538db8e285445d4c
-      size: 2376
+      md5: 1d5ed66acaade71d2d605f56d2b9cebe
+      size: 2390
     params:
       params.yaml:
         prepare.drop_columns:
@@ -39,14 +39,22 @@ stages:
       hash: md5
       md5: bc75cada1470c172c9ffb6f227748d45
       size: 224293
+    - path: data/processed/valid.csv
+      hash: md5
+      md5: 8e9cccec10bed2eb93e24f0a661a65b1
+      size: 56283
     - path: src/churn/config.py
       hash: md5
-      md5: f51cdf0fc75daa3298f48bdfc5e4fc31
-      size: 2213
+      md5: 720c219fad2217be8bd0bbc73ac265c4
+      size: 4958
+    - path: src/churn/scoring.py
+      hash: md5
+      md5: 1d454b598e26300d5c9d94559c12e8ca
+      size: 1731
     - path: src/churn/train.py
       hash: md5
-      md5: a91c105413e012137d2d194254d28d0f
-      size: 3697
+      md5: 8dff36b3a1a18c805d86f45241f30289
+      size: 6613
     params:
       params.yaml:
         prepare.target: Churn
@@ -57,9 +65,13 @@ stages:
         train.model: random_forest
         train.n_estimators: 200
     outs:
+    - path: models/mlflow_run_id
+      hash: md5
+      md5: 062869416121276ccf7baaffe4120a08
+      size: 32
     - path: models/model.joblib
       hash: md5
-      md5: 209238992283929bee7a4a48cca06e0f
+      md5: d178975043cb65472875472f1835fc19
       size: 2105547
   evaluate:
     cmd: python -m src.churn.evaluate
@@ -68,18 +80,22 @@ stages:
       hash: md5
       md5: 8e9cccec10bed2eb93e24f0a661a65b1
       size: 56283
+    - path: models/mlflow_run_id
+      hash: md5
+      md5: 062869416121276ccf7baaffe4120a08
+      size: 32
     - path: models/model.joblib
       hash: md5
-      md5: 209238992283929bee7a4a48cca06e0f
+      md5: d178975043cb65472875472f1835fc19
       size: 2105547
     - path: src/churn/config.py
       hash: md5
-      md5: f51cdf0fc75daa3298f48bdfc5e4fc31
-      size: 2213
+      md5: 720c219fad2217be8bd0bbc73ac265c4
+      size: 4958
     - path: src/churn/evaluate.py
       hash: md5
-      md5: 6291f02e0e9780a09633a53cf1e3e9f5
-      size: 1888
+      md5: 14f08e0af5fccac7655fc16288a7a5d5
+      size: 2332
     params:
       params.yaml:
         evaluate.min_f1: 0.6

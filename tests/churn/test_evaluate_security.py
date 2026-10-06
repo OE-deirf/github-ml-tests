@@ -128,7 +128,8 @@ class _MainEnv:
         _params: dict[str, Any] = params if params is not None else self.base_params
         _pipe: Any | MagicMock = pipe if pipe is not None else self.mock_pipe
         with patch("src.churn.evaluate.config.load_params", return_value=_params), \
-                patch("src.churn.evaluate.joblib.load", return_value=_pipe):
+                patch("src.churn.evaluate.joblib.load", return_value=_pipe), \
+                patch("src.churn.evaluate.mlflow"):
             main()
 
     def load_metrics(self) -> dict[str, Any]:
@@ -193,10 +194,13 @@ def main_env(
     csv_path: Path = tmp_path / "valid.csv"
     valid_df.to_csv(csv_path, index=False)
     metrics_path: Path = tmp_path / "metrics.json"
+    mlflow_run_id_path: Path = tmp_path / "mlflow_run_id"
+    mlflow_run_id_path.write_text("test-run-id-fixture")
 
     monkeypatch.setattr(config, "VALID_CSV", csv_path)
     monkeypatch.setattr(config, "METRICS_PATH", metrics_path)
     monkeypatch.setattr(config, "MODEL_PATH", tmp_path / "model.joblib")
+    monkeypatch.setattr(config, "MLFLOW_RUN_ID_PATH", mlflow_run_id_path)
 
     return _MainEnv(csv_path, metrics_path, tmp_path / "model.joblib", base_params, mock_pipe)
 
@@ -528,11 +532,16 @@ class TestMainDataSecurity:
         single_class_pipe.predict_proba.return_value = np.array(
             [[0.7, 0.3], [0.8, 0.2], [0.6, 0.4], [0.9, 0.1]]
         )
+        run_id_path = tmp_path / "mlflow_run_id"
+        run_id_path.write_text("test-run-id")
+        monkeypatch.setattr(config, "MLFLOW_RUN_ID_PATH", run_id_path)
+
         import warnings
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")  # Suppress UndefinedMetricWarning for test clarity
             with patch("src.churn.evaluate.config.load_params", return_value=base_params), \
-                    patch("src.churn.evaluate.joblib.load", return_value=single_class_pipe):
+                    patch("src.churn.evaluate.joblib.load", return_value=single_class_pipe), \
+                    patch("src.churn.evaluate.mlflow"):
                 main()  # Must NOT raise
 
         raw: str = metrics_path.read_text()
@@ -634,9 +643,14 @@ class TestMainDataSecurity:
         large_pipe.predict_proba.side_effect = lambda X: np.column_stack([  # pyright: ignore[reportUnknownLambdaType]
             np.full(len(X), 0.4), np.full(len(X), 0.6),
         ])
+        run_id_path = tmp_path / "mlflow_run_id"
+        run_id_path.write_text("test-run-id")
+        monkeypatch.setattr(config, "MLFLOW_RUN_ID_PATH", run_id_path)
+
         start: float = time.monotonic()
         with patch("src.churn.evaluate.config.load_params", return_value=base_params), \
-                patch("src.churn.evaluate.joblib.load", return_value=large_pipe):
+                patch("src.churn.evaluate.joblib.load", return_value=large_pipe), \
+                patch("src.churn.evaluate.mlflow"):
             main()
         elapsed: float = time.monotonic() - start
         assert metrics_path.exists(), (
@@ -829,8 +843,13 @@ class TestMainPathSecurity:
         monkeypatch.setattr(config, "METRICS_PATH", outside_path)
         monkeypatch.setattr(config, "MODEL_PATH", tmp_path / "model.joblib")
 
+        run_id_path = tmp_path / "mlflow_run_id"
+        run_id_path.write_text("test-run-id")
+        monkeypatch.setattr(config, "MLFLOW_RUN_ID_PATH", run_id_path)
+
         with patch("src.churn.evaluate.config.load_params", return_value=base_params), \
-                patch("src.churn.evaluate.joblib.load", return_value=mock_pipe):
+                patch("src.churn.evaluate.joblib.load", return_value=mock_pipe), \
+                patch("src.churn.evaluate.mlflow"):
             main()
 
         assert outside_path.exists(), (

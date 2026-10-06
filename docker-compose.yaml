@@ -139,7 +139,14 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-    environment: *x-env
+    environment:
+      <<: *x-env
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
     command: >
       mlflow server
       --host 0.0.0.0

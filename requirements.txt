@@ -4,6 +4,7 @@ scikit-learn==1.7.2
 joblib==1.6.0
 pyyaml==6.0.3
 mlflow==3.1.0
+pip==26.2.1
 
 # DVC + S3 (MinIO) tamogatas
 dvc==3.67.1
