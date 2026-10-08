@@ -9,12 +9,12 @@ stages:
       size: 431234
     - path: src/churn/config.py
       hash: md5
-      md5: 720c219fad2217be8bd0bbc73ac265c4
-      size: 4958
+      md5: e4dfdd05aaac0374e10ff5a236cd9ac7
+      size: 5100
     - path: src/churn/prepare.py
       hash: md5
-      md5: 1d5ed66acaade71d2d605f56d2b9cebe
-      size: 2390
+      md5: 898b8cf86bc764e2264a36b233f7113b
+      size: 2469
     params:
       params.yaml:
         prepare.drop_columns:
@@ -26,35 +26,35 @@ stages:
     outs:
     - path: data/processed/train.csv
       hash: md5
-      md5: bc75cada1470c172c9ffb6f227748d45
-      size: 224293
+      md5: 43974449dfa00c64b0a43311ae07e0ea
+      size: 226960
     - path: data/processed/valid.csv
       hash: md5
-      md5: 8e9cccec10bed2eb93e24f0a661a65b1
-      size: 56283
+      md5: 8116aa72c2d7f7045279aa45ba962506
+      size: 56951
   train:
     cmd: python -m src.churn.train
     deps:
     - path: data/processed/train.csv
       hash: md5
-      md5: bc75cada1470c172c9ffb6f227748d45
-      size: 224293
+      md5: 43974449dfa00c64b0a43311ae07e0ea
+      size: 226960
     - path: data/processed/valid.csv
       hash: md5
-      md5: 8e9cccec10bed2eb93e24f0a661a65b1
-      size: 56283
+      md5: 8116aa72c2d7f7045279aa45ba962506
+      size: 56951
     - path: src/churn/config.py
       hash: md5
-      md5: 720c219fad2217be8bd0bbc73ac265c4
-      size: 4958
+      md5: e4dfdd05aaac0374e10ff5a236cd9ac7
+      size: 5100
     - path: src/churn/scoring.py
       hash: md5
-      md5: 1d454b598e26300d5c9d94559c12e8ca
-      size: 1731
+      md5: 20e1d0286d79a6e54333b514df3b9eee
+      size: 1784
     - path: src/churn/train.py
       hash: md5
-      md5: 8dff36b3a1a18c805d86f45241f30289
-      size: 6613
+      md5: 7975555377cfa9401d123b463fa4d773
+      size: 6720
     params:
       params.yaml:
         prepare.target: Churn
@@ -67,35 +67,35 @@ stages:
     outs:
     - path: models/mlflow_run_id
       hash: md5
-      md5: 062869416121276ccf7baaffe4120a08
+      md5: b2486e02ac29908de33cbf74f3064205
       size: 32
     - path: models/model.joblib
       hash: md5
-      md5: d178975043cb65472875472f1835fc19
-      size: 2105547
+      md5: d4b9f07501b6f3d896564f6bc6d5fb73
+      size: 2105515
   evaluate:
     cmd: python -m src.churn.evaluate
     deps:
     - path: data/processed/valid.csv
       hash: md5
-      md5: 8e9cccec10bed2eb93e24f0a661a65b1
-      size: 56283
+      md5: 8116aa72c2d7f7045279aa45ba962506
+      size: 56951
     - path: models/mlflow_run_id
       hash: md5
-      md5: 062869416121276ccf7baaffe4120a08
+      md5: b2486e02ac29908de33cbf74f3064205
       size: 32
     - path: models/model.joblib
       hash: md5
-      md5: d178975043cb65472875472f1835fc19
-      size: 2105547
+      md5: d4b9f07501b6f3d896564f6bc6d5fb73
+      size: 2105515
     - path: src/churn/config.py
       hash: md5
-      md5: 720c219fad2217be8bd0bbc73ac265c4
-      size: 4958
+      md5: e4dfdd05aaac0374e10ff5a236cd9ac7
+      size: 5100
     - path: src/churn/evaluate.py
       hash: md5
-      md5: 14f08e0af5fccac7655fc16288a7a5d5
-      size: 2332
+      md5: 4abc43d9f819732eb2ec2fd85923f444
+      size: 2407
     params:
       params.yaml:
         evaluate.min_f1: 0.6
@@ -104,5 +104,5 @@ stages:
     outs:
     - path: metrics/metrics.json
       hash: md5
-      md5: 8f1b56739f6395345777b2bfbb641098
-      size: 149
+      md5: ec180aa03c6380ed1d84c9332bee467d
+      size: 158
