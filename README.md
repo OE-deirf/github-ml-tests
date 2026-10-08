@@ -1,6 +1,10 @@
 # github-docker-mlflow
 Simple Machine Learning demo using docker in github + MLFlow
 
+# set settings
+- .env file <- .env.example file
+- secrets directory <- secrets.example directory
+
 # venv
 - python3.10 -m venv .venv
 - source .venv/bin/activate
