@@ -238,7 +238,8 @@ class TestComputeMetricsTypeValidation:
         # validation -- so the TypeError originates inside predict_proba, not in
         # compute_metrics (which has no guard of its own).
         realistic_pipe = MagicMock()
-        realistic_pipe.predict_proba.side_effect = lambda X: np.full((len(X), 2), 0.5)  # pyright: ignore[reportUnknownLambdaType]
+        realistic_pipe.predict_proba.side_effect = \
+            lambda X: np.full((len(X), 2), 0.5)  # pyright: ignore[reportUnknownLambdaType]
 
         with pytest.raises((TypeError, ValueError)):
             compute_metrics(realistic_pipe, None, y)  # type: ignore[arg-type]
@@ -302,7 +303,8 @@ class TestComputeMetricsTypeValidation:
         realistic_pipe = MagicMock()
         # len({"feature": [1.0, 2.0]}) == 1 → produces a 1-row proba array, but y has
         # 6 elements → accuracy_score(y_6, y_pred_1) raises ValueError from sklearn.
-        realistic_pipe.predict_proba.side_effect = lambda X: np.full((len(X), 2), 0.5)  # pyright: ignore[reportUnknownLambdaType]
+        realistic_pipe.predict_proba.side_effect = \
+            lambda X: np.full((len(X), 2), 0.5)  # pyright: ignore[reportUnknownLambdaType]
 
         with pytest.raises((TypeError, ValueError)):
             compute_metrics(realistic_pipe, {"feature": [1.0, 2.0]}, y)  # type: ignore[arg-type]
